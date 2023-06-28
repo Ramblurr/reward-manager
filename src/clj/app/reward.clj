@@ -364,16 +364,25 @@
               :status (:status resp)
               :response-time total)))
 
+(defn redirect [uri]
+  {:status 302 :headers {"Location" uri} :body ""})
+
 (defn app [{:keys [:request-method :uri] :as req}]
   (let [start-time (System/currentTimeMillis)
         path (vec (rest (str/split uri #"/")))
         resp (match [request-method path]
-               [:get []] (html5-response (page-home))
                [:get ["img" #".*\.(jpg|png)"]] (asset-response req path)
                [:get ["js" #".*\.js"]] (asset-response req path)
                [:get ["css" #".*\.css"]] (asset-response req path)
+
+               [:get []] (html5-response (page-home))
+
                [:post ["rewards"]] (html5-response (page-rewards req))
+               [:get ["rewards"]] (redirect "/")
+
                [:post ["rewards-confirm"]] (html5-response (page-rewards-confirm req))
+               [:get ["rewards-confirm"]] (redirect "/")
+
                :else {:status 404 :body "Error 404: Page not found"})]
     (log-request start-time req resp)
     resp))
