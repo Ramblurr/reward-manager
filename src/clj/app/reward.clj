@@ -7,6 +7,7 @@
    [cognitect.transit :as transit]
    [medley.core :as m]
    [clojure.walk :as walk]
+   [clojure.core.match.regex]
    [clojure.core.match :refer [match]]
    [clojure.string :as str])
   (:import [java.net URLDecoder]
@@ -39,8 +40,10 @@
             {:value "l" :label "L"}
             {:value "xl" :label "XL"}])
 
-(def colors [{:value "yellow" :label "Yellow"}
-             {:value "red" :label "Red"}])
+(def colors [{:value "orange-on-maroon" :label "Orange auf Rot"}
+             {:value "black-on-maroon" :label "Schwarz auf Rot"}
+             {:value "black-on-yellow" :label "Schwarz auf Gelb"}
+             {:value "orange-on-yellow" :label "Orange auf Gelb"}])
 
 ;;; STATE
 
@@ -172,6 +175,31 @@
    [:link {:rel "stylesheet" :href "https://cdn.simplecss.org/simple.min.css"}]
    [:script {:src "https://unpkg.com/htmx.org@1.9.2"}]])
 
+(defn- directory-transversal?
+  "Check if a path contains '..'."
+  [^String path]
+  (-> (str/split path #"/|\\")
+      (set)
+      (contains? "..")))
+
+(defn not-found []
+  {:status  404
+   :body ""})
+
+(defn image-response
+  [[_ filename]]
+  (if (directory-transversal? filename)
+    (not-found)
+    (if-let [r (io/resource (str "public/img/" filename))]
+      (let [file (io/as-file r)
+            length (.length file)]
+        {:headers {"Content-Type" "image/jpeg"
+                   "Content-Length" length
+                   "Cache-Control" "max-age=31536000,public, no-transform"}
+         :status 200
+         :body file})
+      (not-found))))
+
 (defn html5-response
   [body]
   {:status 200
@@ -198,13 +226,13 @@
     [:form {:hx-post "/rewards" :hx-target "#content"}
      [:p
       [:label "Unterstützercode"]
-      [:input {:type "text" :name "code" :value "" :style "text-transform:uppercase;"}]]
-     [:button "Continue"]]]])
+      [:input {:type "text" :name "code" :value "A-GKS3A" :style "text-transform:uppercase;"}]]
+     [:button "Weiter"]]]])
 
 (defn form-size [name selected-value]
   (let [name (str name "_size")]
     [:p
-     [:label "Size"]
+     [:label "Größe"]
      (map (fn [{:keys [value label]}]
             [:label
              [:input {:checked (= selected-value value) :name name :type "radio" :value value}] label]) sizes)]))
@@ -212,7 +240,7 @@
 (defn form-color [name selected-value]
   (let [name (str name "_color")]
     [:p
-     [:label "Color"]
+     [:label "Farbe"]
      (map (fn [{:keys [value label]}]
             [:label
              [:input {:checked (= selected-value value) :name name :type "radio" :value value}] label]) colors)]))
@@ -230,7 +258,14 @@
 
 (defn comp-reward-choice [idx {:keys [type size color]}]
   (list
-   [:h4 (get {:tie-dye "Exklusives Tie-Dye-T-Shirt" :tshirt "Festival T-Shirt"} type)]
+   [:h3 (str (inc idx) ". ") (get {:tie-dye "Exklusives Tie-Dye-T-Shirt" :tshirt "Festival T-Shirt"} type)]
+   [:picture
+    (let [src (get {:tie-dye "img/tie-dye.jpg" :tshirt "img/combo.jpg"} type)
+          src-wide (get {:tie-dye "img/tie-dye.jpg" :tshirt "img/combo-wide.jpg"} type)]
+      (list
+       [:source {:srcset src :media "(max-width: 800px)"}]
+       [:source {:srcset src-wide  :media "(min-width: 801px)"}]
+       [:img {:src src :decoding :auto :loading :eager :fetchpriority :high :alt "Strafiato Festival T-Shirt Options"}]))]
    (condp = type
      :tshirt (form-festival-shirt idx size color)
      :tie-dye (form-tie-dye-shirt idx size))))
@@ -261,7 +296,7 @@
              [:form {:hx-post "/rewards-confirm" :hx-target "#content"}
               [:input {:type :hidden :name "code" :value code}]
               (map-indexed comp-reward-choice user-choices)
-              [:button "Confirm"]]]
+              [:button "Zusagen"]]]
             [:div
              (pickup-info code)])))]
 
@@ -307,8 +342,10 @@
 
 (defn app [{:keys [:request-method :uri] :as req}]
   (let [path (vec (rest (str/split uri #"/")))]
+    (tap> path)
     (match [request-method path]
       [:get []] (html5-response (page-home))
+      [:get ["img" #".*\.jpg"]] (image-response path)
       [:post ["rewards"]] (html5-response (page-rewards req))
       [:post ["rewards-confirm"]] (html5-response (page-rewards-confirm req))
       :else {:status 404 :body "Error 404: Page not found"})))
@@ -346,5 +383,7 @@
   (go)
   (stop)
   (restart) ;; rcf
+
+  (get-by-code "G-6E9WF")
   ;;
   )
