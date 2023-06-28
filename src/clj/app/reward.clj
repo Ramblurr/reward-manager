@@ -290,7 +290,6 @@
 (defn page-rewards [{:keys [body]}]
   (let [code (str/upper-case (parse-body body))
         {:keys [email donations user-choices name]} (get-by-code code)]
-    (tap> {:d donations})
     (if email
       [:div
        [:p (str "Hallo " name "!")]
@@ -307,7 +306,7 @@
           [:form {:hx-post "/rewards-confirm" :hx-target "#content" :hx-push-url "true"}
            [:input {:type :hidden :name "code" :value code}]
            (map-indexed comp-reward-choice user-choices)
-           [:button "Zusagen"]]]
+           [:button "Bestätigen"]]]
          [:div
           (goodbye)])]
 
