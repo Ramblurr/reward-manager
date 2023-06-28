@@ -1,0 +1,21 @@
+{:paths ["scripts"]
+ :tasks
+ {lint (shell "clj-kondo --lint src")
+  repl  (shell "clojure -A:dev")
+  compile (shell "clojure -T:build compile-dev")
+  repl-portal  (shell "clojure -A:dev -M:inspect/portal-cli-cider")
+  repl-term  (shell "clojure -A:test -A:dev -M:repl/cider-refactor")
+
+  npm-install (shell {:dir "./"} "npm" "install")
+  repl-ui {:depends [npm-install]
+           :task  (shell {:dir "./"} "npx shadow-cljs -A dev watch app")}
+  tailwind-css (shell {:dir "./"} "npx" "tailwindcss" "-i" "resources/public/css/main.css" "-o" "resources/public/css/compiled/main.css")
+  watch-css (shell {:dir "./"} "npx" "tailwindcss" "-w" "-i" "resources/public/css/main.css" "-o" "resources/public/css/compiled/main.css")
+  prod-css (shell {:dir "./"} "npx" "tailwindcss" "-i" "resources/public/css/main.css" "-o" "resources/public/css/compiled/main.css" "--minify")
+
+  clean (shell "clojure -T:build clean")
+  uberjar (shell "clojure -T:build uberjar")
+  test (shell "./bin/kaocha")
+  container-build {:task (exec 'container/build)}
+  container-publish {:task (exec 'container/publish)}
+  container-publish-latest {:task (exec 'container/publish-latest)}}}
