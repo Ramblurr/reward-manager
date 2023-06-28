@@ -76,7 +76,7 @@
   @state
   (save-state! state data-file)
 
-  (prn (sort (into [] (keys  (:codes  @state)))))
+  (sort (into [] (keys  (:codes  @state))))
 
   ;;
   )
@@ -218,7 +218,7 @@
    [:p "StreetNoise Orchestra"]))
 
 (defn code-form []
-  [:form {:hx-post "/rewards" :hx-target "#content"}
+  [:form {:hx-post "/rewards" :hx-target "#content" :hx-push-url "true"}
    [:p
     [:label "Unterstützercode"]
     [:input {:type "text" :name "code" :value "" #_"A-GKS3A" :style "text-transform:uppercase;"}]]
@@ -285,7 +285,7 @@
    [:p "Dank dir wird Innsbruck vom 6. bis 9. Juli durch die Energie und Leidenschaft der Brassbands belebt."]))
 
 (defn page-rewards [{:keys [body]}]
-  (let [code (parse-body body)
+  (let [code (str/upper-case (parse-body body))
         {:keys [has-rewards? email donations user-choices name]} (get-by-code code)]
     (if email
       [:div
@@ -302,7 +302,7 @@
           (if (seq user-choices)
             [:section
              [:h3 "Bitte auswählen"]
-             [:form {:hx-post "/rewards-confirm" :hx-target "#content"}
+             [:form {:hx-post "/rewards-confirm" :hx-target "#content" :hx-push-url "true"}
               [:input {:type :hidden :name "code" :value code}]
               (map-indexed comp-reward-choice user-choices)
               [:button "Zusagen"]]]
