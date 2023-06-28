@@ -348,6 +348,11 @@
     (update-supporter! (assoc supporter :user-choices new-user-choices))
 
     [:div
+     [:p "Deine Auswahl wurde gespeichert. "]
+     [:p "Hast du es dir anders überlegt?"]
+     [:p
+      [:a {:href "/" :hx-post "/rewards" :hx-target "#content" :hx-push-url "true" :hx-vals (format "{\"code\": \"%s\"}" code)}
+       "Klicke hier, um deine Auswahl zu ändern."]]
      [:p "Erinner daran, du kannst deine Auswahl jederzeit bis zum 5. Juli unter "
       [:a {:href "https://rewards.streetnoise.at"} "https://rewards.streetnoise.at"] " ändern."]
      (pickup-info code)]))
