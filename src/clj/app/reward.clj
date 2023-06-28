@@ -1,6 +1,7 @@
 (ns app.reward
   (:gen-class)
   (:require
+   [clojure.tools.logging :as log]
    [ring.util.response :as rr]
    [ring.middleware.content-type :as rmc]
    [hiccup2.core :as hiccup]
@@ -182,11 +183,19 @@
     (assoc-in resp [:headers "cache-control"] (str "max-age=604800"))
     resp))
 
+(defn not-found
+  []
+  {:status  404
+   :headers {}
+   :body    ""})
+
 (defn asset-response
   [req [asset-type filename]]
-  (-> (rr/resource-response (str asset-type "/" filename) {:root "public/"})
-      (rmc/content-type-response req)
-      (cache-control)))
+  (if-let [resp (rr/resource-response (str asset-type "/" filename) {:root "public"})]
+    (-> resp
+        (rmc/content-type-response req)
+        (cache-control))
+    (not-found)))
 
 (defn html5-response
   [body]
@@ -335,17 +344,31 @@
       [:a {:href "https://rewards.streetnoise.at"} "https://rewards.streetnoise.at"] " ändern."]
      (pickup-info code)]))
 
+(defn log-request
+  [start-time req resp]
+  (let [{:keys [uri request-method query-string]} req
+        finish (System/currentTimeMillis)
+        total (- finish start-time)]
+    (log/info :msg "request completed"
+              :method (str/upper-case (name request-method))
+              :uri uri
+              :query-string query-string
+              :status (:status resp)
+              :response-time total)))
+
 (defn app [{:keys [:request-method :uri] :as req}]
-  (let [path (vec (rest (str/split uri #"/")))]
-    (tap> path)
-    (match [request-method path]
-      [:get []] (html5-response (page-home))
-      [:get ["img" #".*\.(jpg|png)"]] (asset-response req path)
-      [:get ["js" #".*\.js"]] (asset-response req path)
-      [:get ["css" #".*\.css"]] (asset-response req path)
-      [:post ["rewards"]] (html5-response (page-rewards req))
-      [:post ["rewards-confirm"]] (html5-response (page-rewards-confirm req))
-      :else {:status 404 :body "Error 404: Page not found"})))
+  (let [start-time (System/currentTimeMillis)
+        path (vec (rest (str/split uri #"/")))
+        resp (match [request-method path]
+               [:get []] (html5-response (page-home))
+               [:get ["img" #".*\.(jpg|png)"]] (asset-response req path)
+               [:get ["js" #".*\.js"]] (asset-response req path)
+               [:get ["css" #".*\.css"]] (asset-response req path)
+               [:post ["rewards"]] (html5-response (page-rewards req))
+               [:post ["rewards-confirm"]] (html5-response (page-rewards-confirm req))
+               :else {:status 404 :body "Error 404: Page not found"})]
+    (log-request start-time req resp)
+    resp))
 
 (defn go []
   (backup-state! data-file)
