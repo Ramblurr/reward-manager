@@ -231,16 +231,23 @@
 
 (defn form-size [name selected-value]
   (let [name (str name "_size")]
-    [:p
-     [:label "Größe"]
-     (map (fn [{:keys [value label]}]
-            [:label
-             [:input {:checked (= selected-value value) :name name :type "radio" :value value}] label]) sizes)]))
+    [:div
+     [:p
+      [:label [:strong  "Größe"]]
+
+      (map (fn [{:keys [value label]}]
+             [:label
+              [:input {:checked (= selected-value value) :name name :type "radio" :value value}] label]) sizes)]
+     [:details
+      [:summary "Größeninformationen"]
+      [:p
+       [:a {:target "_blank" :href "img/sizing.png"} [:img {:src "img/sizing.png"}]]
+       [:a {:target "_blank" :href "img/size-chart.png"} [:img {:src "img/size-chart.png"}]]]]]))
 
 (defn form-color [name selected-value]
   (let [name (str name "_color")]
     [:p
-     [:label "Farbe"]
+     [:label [:strong "Farbe"]]
      (map (fn [{:keys [value label]}]
             [:label
              [:input {:checked (= selected-value value) :name name :type "radio" :value value}] label]) colors)]))
@@ -345,7 +352,7 @@
     (tap> path)
     (match [request-method path]
       [:get []] (html5-response (page-home))
-      [:get ["img" #".*\.jpg"]] (image-response path)
+      [:get ["img" #".*\.(jpg|png)"]] (image-response path)
       [:post ["rewards"]] (html5-response (page-rewards req))
       [:post ["rewards-confirm"]] (html5-response (page-rewards-confirm req))
       :else {:status 404 :body "Error 404: Page not found"})))
