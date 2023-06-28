@@ -205,6 +205,10 @@
    :body (str (hiccup/html
                (head nil)
                [:body body]))})
+(defn goodbye []
+  (list
+   [:p "Mit groovigen Grüßen,"]
+   [:p "StreetNoise Orchestra"]))
 
 (defn pickup-info [code]
   (list
@@ -214,8 +218,7 @@
    [:p
     "Falls du noch Fragen hast, schreibe uns gerne eine Mail: " [:a {:href "mailto:orchestra@streetnoise.at"} "orchestra@streetnoise.at"] ". Wir sind für dich da!"]
    [:p]
-   [:p "Mit groovigen Grüßen,"]
-   [:p "StreetNoise Orchestra"]))
+   (goodbye)))
 
 (defn code-form []
   [:form {:hx-post "/rewards" :hx-target "#content" :hx-push-url "true"}
@@ -286,28 +289,27 @@
 
 (defn page-rewards [{:keys [body]}]
   (let [code (str/upper-case (parse-body body))
-        {:keys [has-rewards? email donations user-choices name]} (get-by-code code)]
+        {:keys [email donations user-choices name]} (get-by-code code)]
+    (tap> {:d donations})
     (if email
       [:div
        [:p (str "Hallo " name "!")]
        intro-text
-       (when has-rewards?
-         (list
-          [:section
-           [:h3 "Deine Belohnungen"]
-           [:ul
-            (map (fn [{:keys [package] :as d}]
-                   [:li
-                    [:strong (get package-names package)]  [:br] (:Date d)  " €" (:Amount d)]) donations)]]
-          (if (seq user-choices)
-            [:section
-             [:h3 "Bitte auswählen"]
-             [:form {:hx-post "/rewards-confirm" :hx-target "#content" :hx-push-url "true"}
-              [:input {:type :hidden :name "code" :value code}]
-              (map-indexed comp-reward-choice user-choices)
-              [:button "Zusagen"]]]
-            [:div
-             (pickup-info code)])))]
+       [:section
+        [:h3 "Deine Spenden"]
+        [:ul
+         (map (fn [{:keys [package] :as d}]
+                [:li
+                 [:strong (get package-names package)]  [:br] (:Date d)  " €" (:Amount d)]) donations)]]
+       (if (seq user-choices)
+         [:section
+          [:h3 "Bitte auswählen"]
+          [:form {:hx-post "/rewards-confirm" :hx-target "#content" :hx-push-url "true"}
+           [:input {:type :hidden :name "code" :value code}]
+           (map-indexed comp-reward-choice user-choices)
+           [:button "Zusagen"]]]
+         [:div
+          (goodbye)])]
 
       [:div
        [:p "Hoppla! Es sieht so aus, als wäre der eingegebene Unterstützercode nicht vorhanden. Bitte überprüfe deinen Code und versuche es erneut. Du solltest deinen Unterstützercode per E-Mail von uns erhalten haben."]
