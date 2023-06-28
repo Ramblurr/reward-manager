@@ -1,6 +1,8 @@
 (ns app.reward
   (:gen-class)
   (:require
+   [ring.util.response :as rr]
+   [ring.middleware.content-type :as rmc]
    [hiccup2.core :as hiccup]
    [clojure.java.io :as io]
    [org.httpkit.server :as srv]
@@ -172,33 +174,19 @@
    [:meta {:name "viewport"
            :content "width=device-width, initial-scale=1, shrink-to-fit=no"}]
    [:title (or title "Strafiato Rewards")]
-   [:link {:rel "stylesheet" :href "https://cdn.simplecss.org/simple.min.css"}]
-   [:script {:src "https://unpkg.com/htmx.org@1.9.2"}]])
+   [:link {:rel "stylesheet" :href "/css/simple.min.css"}]
+   [:script {:src "/js/htmx.org@1.9.2.js"}]])
 
-(defn- directory-transversal?
-  "Check if a path contains '..'."
-  [^String path]
-  (-> (str/split path #"/|\\")
-      (set)
-      (contains? "..")))
+(defn cache-control [resp]
+  (if (= 200 (:status resp))
+    (assoc-in resp [:headers "cache-control"] (str "max-age=604800"))
+    resp))
 
-(defn not-found []
-  {:status  404
-   :body ""})
-
-(defn image-response
-  [[_ filename]]
-  (if (directory-transversal? filename)
-    (not-found)
-    (if-let [r (io/resource (str "public/img/" filename))]
-      (let [file (io/as-file r)
-            length (.length file)]
-        {:headers {"Content-Type" "image/jpeg"
-                   "Content-Length" length
-                   "Cache-Control" "max-age=31536000,public, no-transform"}
-         :status 200
-         :body file})
-      (not-found))))
+(defn asset-response
+  [req [asset-type filename]]
+  (-> (rr/resource-response (str asset-type "/" filename) {:root "public/"})
+      (rmc/content-type-response req)
+      (cache-control)))
 
 (defn html5-response
   [body]
@@ -226,7 +214,7 @@
     [:form {:hx-post "/rewards" :hx-target "#content"}
      [:p
       [:label "Unterstützercode"]
-      [:input {:type "text" :name "code" :value "A-GKS3A" :style "text-transform:uppercase;"}]]
+      [:input {:type "text" :name "code" :value "" #_"A-GKS3A" :style "text-transform:uppercase;"}]]
      [:button "Weiter"]]]])
 
 (defn form-size [name selected-value]
@@ -352,7 +340,9 @@
     (tap> path)
     (match [request-method path]
       [:get []] (html5-response (page-home))
-      [:get ["img" #".*\.(jpg|png)"]] (image-response path)
+      [:get ["img" #".*\.(jpg|png)"]] (asset-response req path)
+      [:get ["js" #".*\.js"]] (asset-response req path)
+      [:get ["css" #".*\.css"]] (asset-response req path)
       [:post ["rewards"]] (html5-response (page-rewards req))
       [:post ["rewards-confirm"]] (html5-response (page-rewards-confirm req))
       :else {:status 404 :body "Error 404: Page not found"})))
