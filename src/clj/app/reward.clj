@@ -35,7 +35,8 @@
                     "Tie-Dye" "Exklusives Tie-Dye-T-Shirt"
                     "T-Shirt" "Festival T-Shirt"
                     "Cup+Poster" "Strafiato Becher+Poster"
-                    "Poster" "Strafiato Poster"})
+                    "Poster" "Strafiato Poster"
+                    "none" "Ohne Geschenk unterstützen "})
 
 (def sizes [{:value "xs" :label "XS"}
             {:value "s" :label "S"}
@@ -75,7 +76,7 @@
   @state
   (save-state! state data-file)
 
-  (prn (into [] (keys  (:codes  @state))))
+  (prn (sort (into [] (keys  (:codes  @state)))))
 
   ;;
   )
@@ -209,22 +210,26 @@
   (list
    [:p "Denk daran, deinen Unterstützercode mitzubringen!"]
    [:p [:strong [:span {:style "font-size: 3rem;"} code]]]
-   [:p "Dein cooles Merch kannst du am 7. oder 9. Juli nach 17:00 Uhr am Merch-Stand im Treibhaus abholen. "]
-   [:p "Falls du Fragen hast, zögere nicht, uns eine Mail zu schicken: " [:a {:href "mailto:orchestra@streetnoise.at"} "orchestra@streetnoise.at"] ". Wir sind für dich da!"]
+   [:p "Dein Dankeschöns kannst du am 6.-8. Juli ab 17:00 Uhr am Merch-Stand im Treibhaus abholen. "]
+   [:p
+    "Falls du noch Fragen hast, schreibe uns gerne eine Mail: " [:a {:href "mailto:orchestra@streetnoise.at"} "orchestra@streetnoise.at"] ". Wir sind für dich da!"]
    [:p]
    [:p "Mit groovigen Grüßen,"]
    [:p "StreetNoise Orchestra"]))
+
+(defn code-form []
+  [:form {:hx-post "/rewards" :hx-target "#content"}
+   [:p
+    [:label "Unterstützercode"]
+    [:input {:type "text" :name "code" :value "" #_"A-GKS3A" :style "text-transform:uppercase;"}]]
+   [:button "Weiter"]])
 
 (defn page-home []
   [:div
    [:h2 "Strafiato Belohnungsmanager"]
    [:div {:id "content"}
     [:p "Dein Tor zu exklusiven Strafiato-Dankeschöns: Verwalte und Personalisiere deine Belohnungen hier!"]
-    [:form {:hx-post "/rewards" :hx-target "#content"}
-     [:p
-      [:label "Unterstützercode"]
-      [:input {:type "text" :name "code" :value "" #_"A-GKS3A" :style "text-transform:uppercase;"}]]
-     [:button "Weiter"]]]])
+    (code-form)]])
 
 (defn form-size [name selected-value]
   (let [name (str name "_size")]
@@ -293,7 +298,7 @@
            [:ul
             (map (fn [{:keys [package] :as d}]
                    [:li
-                    (get package-names package)  [:br]  "€" (:Amount d) " - " (:Date d)]) donations)]]
+                    [:strong (get package-names package)]  [:br] (:Date d)  " €" (:Amount d)]) donations)]]
           (if (seq user-choices)
             [:section
              [:h3 "Bitte auswählen"]
@@ -305,8 +310,9 @@
              (pickup-info code)])))]
 
       [:div
-       [:p "Hoppla! Es sieht so aus, als wäre der eingegebene Unterstützercode nicht vorhanden. Bitte überprüfe deinen Code und versuche es erneut. Du solltest deinen Unterstützercode in deiner E-Mail finden können."]
-       [:p "Falls du weiterhin Schwierigkeiten hast oder deinen Code nicht finden kannst, sende uns bitte eine E-Mail an"
+       [:p "Hoppla! Es sieht so aus, als wäre der eingegebene Unterstützercode nicht vorhanden. Bitte überprüfe deinen Code und versuche es erneut. Du solltest deinen Unterstützercode per E-Mail von uns erhalten haben."]
+       (code-form)
+       [:p "Falls du weiterhin Schwierigkeiten hast oder deinen Code nicht finden kannst, sende uns bitte eine E-Mail an: "
         [:a {:href "mailto:orchestra@streetnoise.at"} "orchestra@streetnoise.at"]
         ". Wir helfen dir gerne weiter!"]
        [:p "Mit groovigen Grüßen,"]
