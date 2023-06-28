@@ -10,7 +10,7 @@
 (def git-hash (exec "git rev-parse --short HEAD"))
 (def git-branch (exec "git rev-parse --abbrev-ref HEAD"))
 (def build-date (exec "date -u +%Y%m%dT%H%M%S"))
-(def image (str "ghcr.io/ramblurr/probematic"))
+(def image (str "ghcr.io/ramblurr/reward-manager"))
 (def tag (str git-branch "-" git-hash))
 
 (defn build [_]

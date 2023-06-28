@@ -9,7 +9,9 @@
    [clojure.core.match :refer [match]]
    [clojure.string :as str])
   (:import [java.net URLDecoder]
-           [java.io ByteArrayOutputStream FileInputStream]))
+           [java.io ByteArrayOutputStream FileInputStream]
+           [java.time LocalDateTime]
+           [java.time.format DateTimeFormatter]))
 
 (def host (or (System/getenv "REWARD_HOST") "http://localhost"))
 (def port (or (System/getenv "REWARD_PORT") 8081))
@@ -46,6 +48,16 @@
 
 (defn load-state! [state data-file]
   (reset! state (transit/read (transit/reader (FileInputStream. data-file) :json))))
+
+(defn current-date-time []
+  (let [formatter (DateTimeFormatter/ofPattern "yyyy-MM-dd-HH-mm-ss")
+        now (LocalDateTime/now)]
+    (-> formatter (.format now))))
+
+(defn backup-state! [data-file]
+  (let [time-str (current-date-time)
+        dest-path (str data-file ".backup." time-str)]
+    (io/copy (io/file data-file) (io/file dest-path))))
 
 (comment
   (load-state! state data-file)
@@ -178,7 +190,7 @@
     [:form {:hx-post "/rewards" :hx-target "#content"}
      [:p
       [:label "Unterstützercode"]
-      [:input {:type "text" :name "code" :value "A-EDKJL"}]]
+      [:input {:type "text" :name "code" :value ""}]]
      [:button "Continue"]]]])
 
 (defn form-size [name selected-value]
@@ -294,6 +306,7 @@
       :else {:status 404 :body "Error 404: Page not found"})))
 
 (defn go []
+  (backup-state! data-file)
   (load-state! state data-file)
   (reset! server
           (srv/run-server app {:port port}))
