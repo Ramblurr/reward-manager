@@ -1,4 +1,5 @@
 (ns app.reward
+  (:gen-class)
   (:require
    [hiccup2.core :as hiccup]
    [clojure.java.io :as io]
@@ -13,8 +14,12 @@
            [java.time LocalDateTime]
            [java.time.format DateTimeFormatter]))
 
+(defn safe-parse-long [v]
+  (when v
+    (Long/parseLong v)))
+
 (def host (or (System/getenv "REWARD_HOST") "http://localhost"))
-(def port (or (System/getenv "REWARD_PORT") 8081))
+(def port (or (safe-parse-long (System/getenv "REWARD_PORT")) 8081))
 (def data-file (or (System/getenv "REWARD_DATA") "data.json"))
 (defonce server (atom nil))
 (defonce state (atom nil))
@@ -64,11 +69,14 @@
   @state
   (save-state! state data-file)
 
+  (prn (into [] (keys  (:codes  @state))))
+
   ;;
   )
 
 (defn get-by-code [code]
-  (let [email (get-in @state [:codes code])]
+  (let [code (str/upper-case code)
+        email (get-in @state [:codes code])]
     (if email
       (get-in @state [:supporters email])
       :nope)))
@@ -190,7 +198,7 @@
     [:form {:hx-post "/rewards" :hx-target "#content"}
      [:p
       [:label "Unterstützercode"]
-      [:input {:type "text" :name "code" :value ""}]]
+      [:input {:type "text" :name "code" :value "" :style "text-transform:uppercase;"}]]
      [:button "Continue"]]]])
 
 (defn form-size [name selected-value]
@@ -326,6 +334,12 @@
 
 (defn -main [& args]
   (go)
+  (.addShutdownHook
+   (Runtime/getRuntime)
+   (Thread.
+    (fn []
+      (stop))))
+
   @(promise))
 
 (comment
