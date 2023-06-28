@@ -44,10 +44,10 @@
             {:value "l" :label "L"}
             {:value "xl" :label "XL"}])
 
-(def colors [{:value "orange-on-maroon" :label "Orange auf Rot"}
+(def colors [{:value "black-on-yellow" :label "Schwarz auf Gelb"}
+             {:value "orange-on-yellow" :label "Orange auf Gelb"}
              {:value "black-on-maroon" :label "Schwarz auf Rot"}
-             {:value "black-on-yellow" :label "Schwarz auf Gelb"}
-             {:value "orange-on-yellow" :label "Orange auf Gelb"}])
+             {:value "orange-on-maroon" :label "Orange auf Rot"}])
 
 ;;; STATE
 
