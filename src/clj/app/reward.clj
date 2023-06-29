@@ -287,8 +287,13 @@
    [:p "Vielen Dank für deine grandiose Unterstützung bei der Crowdfunding-Kampagne für unser Urban Brass Festival, Strafiato!"]
    [:p "Dank dir wird Innsbruck vom 6. bis 9. Juli durch die Energie und Leidenschaft der Brassbands belebt."]))
 
+(defn clean-code [v]
+  (-> v
+      (str/upper-case)
+      (str/replace #" " "")))
+
 (defn page-rewards [{:keys [body]}]
-  (let [code (str/upper-case (parse-body body))
+  (let [code (clean-code (parse-body body))
         {:keys [email donations user-choices name]} (get-by-code code)]
     (if email
       [:div
